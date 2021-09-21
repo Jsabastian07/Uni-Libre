@@ -1,0 +1,96 @@
+﻿//////////////////////////////////////////////////////////////////////////////////LINKTABLE////////////////////////////////////////////////////////////////////////////////////////////////
+
+/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  desarrollo de la link Table
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+_Ejecucion_Presupuestal_Tmp1:
+Load Distinct
+    Ejecucion.Año					as LinkTable.Año,
+    Ejecucion.MesNum			 	as LinkTable.MesNum,
+    Ejecucion.CodigoCuenta			as LinkTable.CodigoCuenta,
+    Ejecucion.Arb_Ceco				as LinkTable.Arb_Ceco, 
+    Ejecucion.Arb_Proy				as LinkTable.Arb_Proy, 
+    Ejecucion.Arb_Area				as LinkTable.Arb_Area, 
+    Ejecucion.Arb_Sucu				as LinkTable.Arb_Sucu
+FROM 
+[lib://DataFiles/Transformaciones\_Ejecucion_Presupuestal.qvd]
+(qvd);
+
+NoConcatenate
+_Matriculas_Tmp1:
+Load Distinct
+    Matriculas.Año					as LinkTable.Año,
+    Matriculas.Arb_Ceco				as LinkTable.Arb_Ceco,
+    Matriculas.Arb_Sucu			  	as LinkTable.Arb_Sucu
+FROM 
+[lib://DataFiles/Transformaciones\_Matriculas.qvd]
+(qvd);
+
+NoConcatenate
+_Costeo_Tmp1:
+Load Distinct
+    Costeo.Año					    as LinkTable.Año,
+    Costeo.Codigo				    as LinkTable.Arb_Ceco
+FROM 
+[lib://DataFiles/Transformaciones\_Costeo.qvd]
+(qvd);
+
+/*----------*/
+NoConcatenate
+LinkTable_Tmp:
+Load
+    LinkTable.Año,
+    LinkTable.MesNum,
+    LinkTable.CodigoCuenta,
+    LinkTable.Arb_Ceco, 
+    LinkTable.Arb_Proy, 
+    LinkTable.Arb_Area, 
+    LinkTable.Arb_Sucu
+Resident _Ejecucion_Presupuestal_Tmp1;
+Drop Table _Ejecucion_Presupuestal_Tmp1;
+
+Outer Join(LinkTable_Tmp)
+
+Load
+    LinkTable.Año,
+    LinkTable.Arb_Ceco, 
+    LinkTable.Arb_Sucu
+Resident _Matriculas_Tmp1;
+Drop Table _Matriculas_Tmp1;
+
+Outer Join(LinkTable_Tmp)
+
+Load
+    LinkTable.Año,
+    LinkTable.Arb_Ceco
+Resident _Costeo_Tmp1;
+Drop Table _Costeo_Tmp1;
+
+/*----------*/
+NoConcatenate
+LinkTable:
+Load
+	LinkTable.Año&'-'&LinkTable.MesNum&'-'&LinkTable.CodigoCuenta&'-'&LinkTable.Arb_Ceco&'-'&LinkTable.Arb_Proy&'-'&LinkTable.Arb_Area&'-'&LinkTable.Arb_Sucu 	    as Ck.Key,
+	LinkTable.Año&'-'&LinkTable.Arb_Ceco&'-'&LinkTable.Arb_Sucu                                     															    as Ck.Key2,
+  	LinkTable.Año&'-'&LinkTable.Arb_Ceco                                                                                                                            as Ck.Key3,
+	LinkTable.Año&'-'&LinkTable.MesNum																															    as Ck.Calendar,
+	LinkTable.Año,
+	LinkTable.MesNum,
+	LinkTable.CodigoCuenta    	                                  	as Sk.CodigoCuenta,
+	LinkTable.Arb_Ceco		                                        as Sk.Ceco, 
+	LinkTable.Arb_Proy		                                        as Sk.Proy, 
+	LinkTable.Arb_Area		                                        as Sk.Area, 
+	LinkTable.Arb_Sucu		                                        as Sk.Sucu
+    //'prueba' 					                                    as Flag
+    //Applymap('Seccional_Map',LinkTable.Arb_Sucu,Null())           as Sk.SucoHomo
+Resident LinkTable_Tmp;
+Drop Table LinkTable_Tmp;
+
+Store LinkTable into [lib://DataFiles/Transformaciones\_LinkTable.qvd];
+//Drop Table LinkTable;

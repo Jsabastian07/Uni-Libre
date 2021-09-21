@@ -1,0 +1,27 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Parametros para reporte Adhoc
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+/* Reporte de Ventas */
+
+Ejecucion_AdhocDimensions_Filas:
+LOAD * INLINE [_dimension_Filas
+Nivel de Consulta 1
+Nivel de Consulta 2
+Nivel de Consulta 3
+Nivel de Consulta 4
+Nivel de Consulta 5
+];
+
+
+Ejecucion_AdhocMedidas:
+LOAD * INLINE [_medidas
+Valor Ejecucion
+Valor Presupuesto
+% Ejecucion
+];

@@ -1,0 +1,27 @@
+/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para Dimencion Cuentas Con tables
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+////////////////////////////////////////////////////////////////////////////////////CUENTA CONTABLE////////////////////////////////////////////////////////////////////////////////////////
+//Left Keep(LinkTable)
+CuentaContable:
+LOAD
+    "Codigo"			      as Sk.CodigoCuenta,
+    "Codigo"			      as CuentaContable.Codigo,
+    Clase						    as CuentaContable.Clase,
+    Grupo						    as CuentaContable.Grupo,
+    Subgrupo					  as CuentaContable.SubGrupo,
+    "Nivel"		          as CuentaContable.Nivel,
+    Concepto					  as CuentaContable.Concepto,
+    'Ok'								as CuentaContable.Flag,
+    "Modalidad"	        as CuentaContable.ModContratacion
+FROM 
+[lib://DataFiles/Parametrizaciones\PlanCuentas.xlsx]
+(ooxml, embedded labels, table is cuentas);
+ 
+Store CuentaContable into [lib://DataFiles/Transformaciones\_CuentaContable.qvd];

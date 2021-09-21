@@ -1,0 +1,24 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  Dimencion Centro de Costo
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+CentroCosto: 
+LOAD
+    Codigo                                          as Sk.Ceco,
+    Codigo                                          as CentroCosto.Codigo,
+    Capitalize("CLASE")			                        as CentroCosto.Clase,
+    Capitalize("GRUPO")			  	                    as CentroCosto.Grupo,
+    Capitalize("SUBGRUPO")			                    as CentroCosto.SubGrupo,
+    Capitalize("TIPO CENTRO DE COSTOS")			  	    as CentroCosto.Tipo,
+    Capitalize("CENTRO DE COSTOS")					        as CentroCosto.Nombre,
+    'Ok' 												                    as CentroCosto.Flag
+FROM 
+[lib://DataFiles/Parametrizaciones\Estructura_Dimencional.xlsx]
+(ooxml, embedded labels, table is [centro_costo ]);
+
+Store CentroCosto into [lib://DataFiles/Transformaciones\_CentroCosto.qvd];

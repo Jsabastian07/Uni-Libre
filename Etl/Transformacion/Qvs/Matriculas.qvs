@@ -1,0 +1,84 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  las Matriculas
+----------------------------------------------------------------------------------------------------
+ Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+ Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+ Fecha     : 15\3\2021
+*****************************************************************************************************/
+/*-------------*/
+/*Matriculas Ejecutado*/
+/*-------------*/
+MatriculasEjecucion_Tmp1:
+LOAD
+    COD_SECCIONAL							as Seccional,
+    COD_PERIODO								as Cod_Periodo,
+    COD_CEN_COSTO							as Cecos,
+    "TOTAL"									as Total_Ejecutado
+FROM 
+[lib://Recursos/4.Datos/Matriculas_*.qvd]
+(qvd);
+
+/*-------------*/
+/*Matriculas Proyeccion*/
+/*-------------*/
+ProyeccionMatriculas_Tmp1:
+LOAD
+    AÑO										as Año,
+    CICLO									as Ciclo,
+    SUCURSAL								as Seccional,
+    "CODIGO CENTRO COSTO"					as Cecos,
+    "NUMERO DE MATRICULAS PROYECTADAS"		as Total_Proyectado
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones\HISTORICO DE MATRICULAS PROYECTADAS PARA CAPTURA DE DATOS EN BI *.xlsx]
+(ooxml, embedded labels, table is PROYECTADO);
+
+/*----------*/
+NoConcatenate
+ProyeccionMatriculas_Tmp2:
+Load
+    Año,
+    If(Ciclo='I','1',If(Ciclo='II','2'))    	as Ciclo,
+    Seccional,
+    Cecos,
+    Total_Proyectado
+Resident ProyeccionMatriculas_Tmp1;
+Drop Table ProyeccionMatriculas_Tmp1;
+
+/*----------*/
+NoConcatenate
+Matriculas_Tmp:
+Load
+    Seccional&'-'&Cecos&'-'&Left(Cod_Periodo,4)&'-'&Right(Cod_Periodo,1)  as Llave,
+    Seccional,
+    Right(Cod_Periodo,1) 		                         	as Cod_Periodo,
+    Cecos,
+    Left(Cod_Periodo,4)										as Año,
+    Total_Ejecutado 					                   	as TOTAL_MATRICULA
+Resident MatriculasEjecucion_Tmp1;
+Drop Table MatriculasEjecucion_Tmp1;
+
+Left Join 
+Load 
+    Seccional&'-'&Cecos&'-'&Año&'-'&Ciclo                   as Llave,
+    Total_Proyectado			                            as TOTAL_PROYECTADO
+Resident ProyeccionMatriculas_Tmp2;
+Drop Table ProyeccionMatriculas_Tmp2;
+
+/*----------*/
+NoConcatenate
+Matriculas:
+Load
+    Año&'-'&Cecos&'-'&Seccional  	as Ck.Key2,
+    Seccional                      	as Matriculas.Arb_Sucu,
+    Cod_Periodo                     as Matriculas.Periodo,
+    Cecos                        	as Matriculas.Arb_Ceco,
+    Año                             as Matriculas.Año,
+    TOTAL_MATRICULA                 as Matriculas.Total_Matricula,
+    TOTAL_PROYECTADO				as Matriculas.Total_Proyectado
+Resident Matriculas_Tmp
+Where Seccional <> null();
+Drop Table Matriculas_Tmp;
+
+Store Matriculas into [lib://DataFiles/Transformaciones\_Matriculas.qvd];

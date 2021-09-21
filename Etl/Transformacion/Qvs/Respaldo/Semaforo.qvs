@@ -1,0 +1,362 @@
+﻿
+///////////////////////////////////////////////////////////////////////
+Dim_CuentasContables_Tmp1:
+LOAD 
+    CUE_CONT, 
+    CUE_CODI	as COD_CUENTA,
+    CLASE,
+    GRUPO,  
+    CONCEPTO	
+FROM
+[lib://DataFiles/CuentasContables.qvd]
+(qvd);
+
+//////////////////////////////////////////////////////////////////////
+NoConcatenate
+Arbol_Tmp1:
+LOAD 
+    ARB_CONT, 
+    ARB_NOMB, 
+    ARB_CODI, 
+    TAR_CODI
+FROM
+[lib://DataFiles/Arbol.qvd]
+(qvd)
+Where
+WildMatch(TAR_CODI, 2,3,4);
+
+///////////////////
+Map_Sucu:
+Mapping
+Load
+    ARB_CODI	as Sucu,
+    TAR_CODI
+Resident Arbol_Tmp1
+Where
+TAR_CODI = 2;
+
+///////////////////
+Map_Ceco:
+Mapping
+Load
+    ARB_CODI	as Ceco,
+    TAR_CODI
+Resident Arbol_Tmp1
+Where
+TAR_CODI = 3;
+          
+///////////////////
+Map_Proy:
+Mapping
+Load
+    ARB_CODI	as Proy,
+    TAR_CODI
+Resident Arbol_Tmp1
+Where
+TAR_CODI = 4;        
+
+///////////////////
+Map_CueCont:
+Mapping
+LOAD 
+    CUE_CONT,  
+    COD_CUENTA
+Resident Dim_CuentasContables_Tmp1;
+           
+///////////////////
+Map_CodigoNombre:
+Mapping
+Load
+    ARB_CODI&'-'&TAR_CODI	as Llave,
+    ARB_NOMB
+Resident Arbol_Tmp1;
+Drop Table Arbol_Tmp1;
+
+///////////////////
+Map_CuentaNombre:
+Mapping
+LOAD 
+    COD_CUENTA	as Codigo,
+    CONCEPTO
+Resident Dim_CuentasContables_Tmp1;
+Drop Table Dim_CuentasContables_Tmp1;
+
+///////////////////
+NoConcatenate
+Ejecucion_Tmp1:
+LOAD Distinct 
+Ejecucion.Arb_Ceco		as Ceco, 
+Ejecucion.Arb_Proy		as Proy,  
+Ejecucion.Arb_Sucu		as Sucu,
+ApplyMap('Map_CueCont',Ejecucion.Cue_Cont,Null())		as CuentaContable
+FROM
+[lib://DataFiles/Transformaciones\_Ejecucion_Presupuestal.qvd]
+(qvd);
+
+///////////////////
+NoConcatenate
+Proyecto_Tmp1:
+LOAD
+    Proyecto.Codigo		as Proy, 
+    Proyecto.Programa		as Proy_Programa, 
+    Proyecto.Nombre		as Proy_Nombre
+FROM
+[lib://DataFiles/Transformaciones\_Proyecto.qvd]
+(qvd);
+
+///////////////////
+NoConcatenate
+CentroCosto_Tmp1:
+LOAD  
+    CentroCosto.Codigo	as Ceco, 
+    CentroCosto.Clase		as Ceco_Clase, 
+    CentroCosto.Grupo		as Ceco_Grupo, 
+    CentroCosto.SubGrupo	as Ceco_SubGrupo, 
+    CentroCosto.Tipo		as Ceco_Tipo, 
+    CentroCosto.Nombre	as Ceco_Nombre
+FROM
+[lib://DataFiles/Transformaciones\_CentroCosto.qvd]
+(qvd);
+
+///////////////////
+NoConcatenate
+Seccional_Tmp1:
+LOAD 
+    Seccional.Codigo		as Sucu, 
+    Seccional.Nombre		as Sucu_Nombre
+
+FROM
+[lib://DataFiles/Transformaciones\_Seccional.qvd]
+(qvd);
+
+///////////////////
+NoConcatenate
+CuentaContable_Tmp1:
+LOAD  
+    CuentaContable.Codigo		as CuentaContable, 
+    CuentaContable.Concepto	as CuentaContable_Nombre 
+FROM
+[lib://DataFiles/Transformaciones\_CuentaContable.qvd]
+(qvd);
+
+////////////////////////////////////////////Comienzo Transformacion/////////////////////////////////////////////////////
+NoConcatenate
+Dimension_Tmp1:
+LOAD Distinct
+    Ceco				as Codigo, 
+    Ceco_Nombre		as Nombre,
+    'Centro Costo'	as Tipo_Dimension
+Resident CentroCosto_Tmp1;
+
+Concatenate
+LOAD Distinct
+    Proy				as Codigo, 
+    Proy_Nombre		as Nombre,
+    'Proyecto'		as Tipo_Dimension
+Resident Proyecto_Tmp1;
+
+Concatenate
+LOAD Distinct
+    Sucu				as Codigo, 
+    Sucu_Nombre		as Nombre,
+    'Sucursal'		as Tipo_Dimension
+Resident Seccional_Tmp1;
+
+Concatenate
+LOAD  
+    CuentaContable			as Codigo, 
+    CuentaContable_Nombre		as Nombre,
+    'Cuenta Contable'			as Tipo_Dimension
+Resident CuentaContable_Tmp1;
+
+////////////////////////////////////////////Segmentacion De Codigos ///////////////////////////////////////////////////
+NoConcatenate
+CentroCosto_Tmp2:
+LOAD Distinct 
+    Ceco,
+    ApplyMap('Map_Ceco',Ceco,Null())	as Tar_Codigo
+Resident Ejecucion_Tmp1
+Where Ceco <> 0;
+
+Left Join(CentroCosto_Tmp2)
+LOAD 
+    Ceco, 
+    'Centro Costo'		as Tipo_Dimension
+Resident CentroCosto_Tmp1;
+Drop Table CentroCosto_Tmp1;
+
+///////////////////////////
+NoConcatenate
+Proyecto_Tmp2:
+LOAD Distinct
+    Proy,
+    ApplyMap('Map_Proy',Proy,Null())	as Tar_Codigo
+Resident Ejecucion_Tmp1
+Where Proy <> 0;
+
+Left Join(Proyecto_Tmp2)
+LOAD 
+    Proy,  
+    'Proyecto'			as Tipo_Dimension
+Resident Proyecto_Tmp1;
+Drop Table Proyecto_Tmp1;
+
+///////////////////////////
+NoConcatenate
+Sucursal_Tmp2:
+LOAD Distinct 
+    Sucu,
+    ApplyMap('Map_Sucu',Sucu,Null())	as Tar_Codigo
+Resident Ejecucion_Tmp1
+Where Sucu <> 0;
+
+Left Join(Sucursal_Tmp2)
+LOAD
+    Sucu, 
+    'Sucursal'			as Tipo_Dimension
+Resident Seccional_Tmp1;
+Drop Table Seccional_Tmp1;
+
+///////////////////////////
+NoConcatenate
+CuentaContable_Tmp2:
+LOAD Distinct 
+    CuentaContable,
+    5									as Tar_Codigo
+Resident Ejecucion_Tmp1;
+
+Left Join(CuentaContable_Tmp2)
+LOAD
+    CuentaContable, 
+    'Cuenta Contable'		as Tipo_Dimension
+Resident CuentaContable_Tmp1;
+Drop Table CuentaContable_Tmp1;
+
+Drop Table Ejecucion_Tmp1;
+
+/////////////////////////////////////////////Union De Codigos de Ejecucion ///////////////////////////////////////////////
+NoConcatenate
+Ejecucion_Tmp2:
+LOAD Distinct
+    Ceco			as Codigo,
+    Tar_Codigo,
+    Capitalize(ApplyMap('Map_CodigoNombre',Ceco&'-'&Tar_Codigo,'Cuenta Contable'))	as Nombre,
+    Tipo_Dimension
+Resident CentroCosto_Tmp2;
+Drop Table CentroCosto_Tmp2;
+
+Concatenate
+LOAD Distinct
+    Proy			as Codigo,
+    Tar_Codigo, 
+    Capitalize(ApplyMap('Map_CodigoNombre',Proy&'-'&Tar_Codigo,'Cuenta Contable'))	as Nombre,
+    Tipo_Dimension
+Resident Proyecto_Tmp2;
+Drop Table Proyecto_Tmp2;
+
+Concatenate
+LOAD Distinct
+    Sucu			as Codigo,
+    Tar_Codigo, 
+    Capitalize(ApplyMap('Map_CodigoNombre',Sucu&'-'&Tar_Codigo,'Cuenta Contable'))	as Nombre,
+    Tipo_Dimension
+Resident Sucursal_Tmp2;
+Drop Table Sucursal_Tmp2;
+
+Concatenate
+LOAD Distinct
+    CuentaContable			as Codigo,
+    Tar_Codigo, 
+    Capitalize(ApplyMap('Map_CodigoNombre',CuentaContable&'-'&Tar_Codigo,'Cuenta Contable'))	as Nombre,
+    Tipo_Dimension
+Resident CuentaContable_Tmp2;
+Drop Table CuentaContable_Tmp2;
+
+/////////////////////////////////////////////Union De Codigos de Ejecucion ///////////////////////////////////////////////
+NoConcatenate
+Dimension_Tmp2:
+LOAD Distinct
+    Codigo&'-'&Tipo_Dimension as Ck.Dimension,
+    Codigo, 
+    Nombre
+Resident Dimension_Tmp1;
+Drop Table Dimension_Tmp1;
+
+NoConcatenate
+Ejecucion_Tmp3:
+LOAD Distinct
+    Codigo,
+    Tar_Codigo, 
+    Nombre,
+    Tipo_Dimension,
+    'No Parametrizado'						as Estado
+Resident Ejecucion_Tmp2
+Where
+1=1
+And Not Exists(Ck.Dimension, Codigo&'-'&Tipo_Dimension);
+
+Drop Table Dimension_Tmp2;
+Drop Table Ejecucion_Tmp2;
+
+/////////////////////////////////////////////Segmentacion de Dimension y Nombre///////////////////////////////////////////////
+NoConcatenate
+Ejecucion_Tmp4:
+LOAD Distinct
+    Codigo, 
+    Capitalize(ApplyMap('Map_CodigoNombre',Codigo&'-'&Tar_Codigo,'Sin Nombre'))	as Nombre,
+    Estado,
+    Tar_Codigo
+Resident Ejecucion_Tmp3
+Where Codigo <> Null();
+Drop Table Ejecucion_Tmp3;
+
+NoConcatenate
+Ejecucion_Tmp5:
+LOAD Distinct
+    Codigo, 
+    Nombre,
+    Estado,
+    'Sucursal'			as Tipo_Dimension
+Resident Ejecucion_Tmp4
+Where Tar_Codigo = 2;
+
+Concatenate
+LOAD Distinct
+    Codigo, 
+    Nombre,
+    Estado,
+    'Centro de Costo'	as Tipo_Dimension
+Resident Ejecucion_Tmp4
+Where Tar_Codigo = 3;
+
+Concatenate
+LOAD Distinct
+    Codigo, 
+    Nombre,
+    Estado,
+    'Proyecto'			as Tipo_Dimension
+Resident Ejecucion_Tmp4
+Where Tar_Codigo = 4;
+
+Concatenate
+LOAD Distinct
+    Codigo, 
+    Capitalize(ApplyMap('Map_CuentaNombre',Codigo,'Cuenta Contable'))	as Nombre,
+    Estado,
+    'Cuenta Contable'	as Tipo_Dimension
+Resident Ejecucion_Tmp4
+Where Tar_Codigo = 5;
+Drop Table Ejecucion_Tmp4;
+
+/////////////////////////////////////////////Finaliza Transformacion///////////////////////////////////////////////
+NoConcatenate
+Semaforo:
+LOAD Distinct
+    Codigo				as Semaforo.Codigo, 
+    Nombre				as Semaforo.Nombre,
+    Estado				as Semaforo.Estado,
+    Tipo_Dimension		as Semaforo.TipoDimension
+Resident Ejecucion_Tmp5;
+Drop Table Ejecucion_Tmp5;
+
+Store Semaforo into [lib://DataFiles/Transformaciones\_Semaforo.qvd];

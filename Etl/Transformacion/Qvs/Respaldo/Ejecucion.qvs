@@ -1,0 +1,280 @@
+﻿
+/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  la Ejecucion Presupuestal
+----------------------------------------------------------------------------------------------------
+ Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+ Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+ Fecha     : 15\2\2020
+*****************************************************************************************************/
+Ejecucion_Tmp1:
+Load
+	SAL_ANOP		AS AÑO, 
+	SAL_MESP		AS MES, 
+	SCE_VADB		AS VALOR_DEBITO, 
+	SCE_VACR		AS VALOR_CREDITO, 
+	SAL_VPRE		AS VALOR_APROBADO, 
+	SAL_MOVI		AS VALOR_ADIC_REDUC, 
+	SAL_TRAS		AS VALOR_TRASLADOS, 
+	SAL_VRES		AS VALOR_RESERVAS,
+	CUE_CONT,
+	CODI_CECOS		AS ARB_CECO, 
+	CODI_PROY		AS ARB_PROY, 
+	CODI_AREA		AS ARB_AREA, 
+	CODI_SUCUR		AS ARB_SUCU 
+From
+[lib://DataFiles/Ejecucion_Presupuestal_*.qvd]
+(qvd)
+Where CODI_SUCUR <> 0;
+
+//////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+Dim_CuentasContables_Tmp:
+LOAD 
+	CUE_CONT, 
+	CUE_CODI	as Codigo	
+FROM
+[lib://DataFiles/CuentasContables.qvd]
+(qvd);
+
+//////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+PlanCuentas_Tmp:
+LOAD
+   Codigo,
+   Clase
+FROM 
+[lib://DataFiles/Parametrizaciones\PlanCuentas.xlsx]
+(ooxml, embedded labels, table is cuentas);
+
+
+//////////////////////////////////////////////////////////////////////////////
+/* Transformacion */
+NoConcatenate
+SegmentacionCuentas_Tmp1:
+Load	
+	CUE_CONT,
+   	Codigo
+Resident Dim_CuentasContables_Tmp;
+Drop Table Dim_CuentasContables_Tmp;
+
+Right Join(SegmentacionCuentas_Tmp1)
+
+Load
+   Codigo,
+   ApplyMap('TipoCuenta_Map',Clase,Null())	as Clase
+
+Resident PlanCuentas_Tmp;
+Drop Table PlanCuentas_Tmp;
+
+//////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+SegmentacionCuentas_Tmp2:
+Load
+	CUE_CONT,
+   	Codigo,
+   	Clase
+Resident SegmentacionCuentas_Tmp1
+Where IsNull(CUE_CONT) =False();
+Drop Table SegmentacionCuentas_Tmp1;
+
+//////////////////////////////////////////////////////////////////////////////
+/*Parametros Iniciales de Transformacion para preparacion de datos*/
+NoConcatenate
+Ejecucion_Tmp2:
+Load
+	CUE_CONT,
+   	Codigo		as CodigoCuenta,
+   	Clase		as TipoCuenta
+Resident SegmentacionCuentas_Tmp2;
+Drop Table SegmentacionCuentas_Tmp2;
+
+Right Join(Ejecucion_Tmp2)
+
+Load
+	AÑO, 
+	MES,
+   	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	Sum(VALOR_APROBADO+VALOR_ADIC_REDUC+VALOR_TRASLADOS) 	as PRESUPUESTO,
+	Sum(VALOR_RESERVAS+(VALOR_DEBITO-VALOR_CREDITO))		as EJECUCUION
+Resident Ejecucion_Tmp1
+Where 1=1
+Group BY AÑO,MES,CUE_CONT,ARB_CECO,ARB_PROY,ARB_AREA,ARB_SUCU;
+Drop Table Ejecucion_Tmp1;
+
+
+NoConcatenate
+Ejecucion_Tmp2_1:
+Load
+	CUE_CONT,
+   	CodigoCuenta,
+   	TipoCuenta,
+   	If(TipoCuenta <> Null(), 'Clasificada', 'Sin Clasificación')	as EstadoCuenta,
+	AÑO, 
+	MES,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp2;
+Drop Table Ejecucion_Tmp2;
+
+/*---------------------*/
+/*Cambio de signos a cuentas 4*/
+NoConcatenate
+Ejecucion_Tmp3:
+Load
+	CUE_CONT,
+	AÑO, 
+	MES, 
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TipoCuenta,
+	EstadoCuenta,
+  	CodigoCuenta,
+	PRESUPUESTO,
+	(EJECUCUION)*-1 as EJECUCUION
+Resident Ejecucion_Tmp2_1
+where 1=1 
+and WildMatch(CodigoCuenta,'4*')
+and EJECUCUION < 0
+Or IsNull(CodigoCuenta);
+
+Concatenate
+
+Load
+	CUE_CONT,
+	AÑO, 
+	MES, 
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TipoCuenta,
+	EstadoCuenta,
+  	CodigoCuenta,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp2_1
+where 1=1 
+and WildMatch(CodigoCuenta,'4*')
+and EJECUCUION >=0
+Or IsNull(CodigoCuenta);
+
+/*---------------------*/
+/* Cambio a cuentas 4175 y union con las otras  cuentas 4*/
+NoConcatenate
+Ejecucion_Tmp4:
+Load
+	CUE_CONT,
+	AÑO, 
+	MES, 
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TipoCuenta,
+	EstadoCuenta,
+  	CodigoCuenta,
+	PRESUPUESTO,
+   (EJECUCUION)*-1 as EJECUCUION
+Resident Ejecucion_Tmp3
+where 1=1
+and WildMatch(CodigoCuenta,'4175*')
+Or IsNull(CodigoCuenta);
+
+Concatenate
+
+Load
+	CUE_CONT,
+	AÑO, 
+	MES, 
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TipoCuenta,
+	EstadoCuenta,
+  	CodigoCuenta,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp3
+where 1=1
+and Not WildMatch(CodigoCuenta,'4175*')
+Or IsNull(CodigoCuenta);
+Drop Table Ejecucion_Tmp3;
+
+/*-----------------------*/
+/* Union de cuentas 4 con resto de cuentas*/
+NoConcatenate
+Ejecucion_Tmp5:
+Load
+	CUE_CONT,
+	AÑO, 
+	MES, 
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TipoCuenta,
+	EstadoCuenta,
+	ApplyMap('Ingresos_Egresos__Map',TipoCuenta,Null())  as AgrupaCuenta,
+  	CodigoCuenta,
+	PRESUPUESTO,
+   EJECUCUION
+Resident Ejecucion_Tmp4;
+Drop Table Ejecucion_Tmp4;
+
+Concatenate
+
+Load
+	CUE_CONT,
+	AÑO, 
+	MES, 
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TipoCuenta,
+	EstadoCuenta,
+	ApplyMap('Ingresos_Egresos__Map',TipoCuenta,Null())  as AgrupaCuenta,
+  	CodigoCuenta,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp2_1
+where 1=1 
+and Not WildMatch(CodigoCuenta,'4*')
+Or IsNull(CodigoCuenta);
+Drop Table Ejecucion_Tmp2_1;
+
+/*-----------------------*/
+NoConcatenate
+Ejecucion_Presupuestal:
+Load
+	AÑO&'-'&MES&'-'&CodigoCuenta&'-'&ARB_CECO&'-'&ARB_PROY&'-'&ARB_AREA&'-'&ARB_SUCU as Ck.Key,
+	CUE_CONT				as Ejecucion.Cue_Cont,
+   	AÑO						as Ejecucion.Año,
+   	MES						as Ejecucion.MesNum,
+   	ARB_CECO				as Ejecucion.Arb_Ceco,
+   	ARB_PROY				as Ejecucion.Arb_Proy,
+   	ARB_AREA				as Ejecucion.Arb_Area,
+   	ARB_SUCU				as Ejecucion.Arb_Sucu,
+   	CodigoCuenta			as Ejecucion.CodigoCuenta,
+	TipoCuenta				as Ejecucion.TipoCuenta,
+	EstadoCuenta			as Ejecucion.EstadoCuenta,
+	AgrupaCuenta			as Ejecucion.AgrupaCuenta,
+	PRESUPUESTO				as Ejecucion.Presupuesto,
+	EJECUCUION				as Ejecucion.Ejecucion
+Resident Ejecucion_Tmp5;
+Drop Table Ejecucion_Tmp5;
+
+Store Ejecucion_Presupuestal into [lib://DataFiles/Transformaciones/_Ejecucion_Presupuestal.qvd];

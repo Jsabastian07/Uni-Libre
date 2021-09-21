@@ -1,0 +1,152 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Tablas de Mapeo de datos
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+/*Calendario*/
+Mapping
+MapMes:
+Load * inline [
+value1,value2
+1,'Ene.'
+2,'Feb.'
+3,'Mar.'
+4,'Abr.'
+5,'May.'
+6,'Jun.'
+7,'Jul.'
+8,'Ago.'
+9,'Sep.'
+10,'Oct.'
+11,'Nov.'
+12,'Dic.'];
+
+Mapping
+MapTrimestre:
+Load * inline [
+value1,value2
+1,'Timestre 1'
+2,'Timestre 1'
+3,'Timestre 1'
+4,'Timestre 2'
+5,'Timestre 2'
+6,'Timestre 2'
+7,'Timestre 3'
+8,'Timestre 3'
+9,'Timestre 3'
+10,'Timestre 4'
+11,'Timestre 4'
+12,'Timestre 4'];
+
+/*------------------------*/
+/*Cuentas Contables*/
+Dim_CuentasContables_Tmp1:
+LOAD 
+	CUE_CONT, 
+	CUE_CODI	as COD_CUENTA,
+	CLASE		as CUENTAS_NIVEL1,
+	GRUPO		as CUENTAS_NIVEL2,  
+	CONCEPTO	as CUENTAS_NIVEL3
+FROM
+[lib://DataFiles/CuentasContables.qvd]
+(qvd);
+
+Mapping
+Mapping_TipoCuenta:
+LOAD 
+	CUE_CONT,  
+	CUENTAS_NIVEL1
+Resident Dim_CuentasContables_Tmp1;
+
+Mapping
+Mapping_Cuenta:
+LOAD 
+	CUE_CONT,  
+	COD_CUENTA
+Resident Dim_CuentasContables_Tmp1;
+Drop Table Dim_CuentasContables_Tmp1;
+
+/*------------------------*/
+/*Arbol*/
+NoConcatenate
+Arbol_Tmp:
+LOAD
+    ARB_CONT,
+    ARB_CODI,
+    TAR_CODI
+FROM 
+[lib://DataFiles/Arbol.qvd]
+(qvd);
+
+/*Areas*/
+Mapping
+Areas_Map:
+Load
+    ARB_CODI,
+    ARB_CONT
+Resident Arbol_Tmp
+Where TAR_CODI=1;
+
+/*Seccional*/
+Mapping
+Seccional_Map:
+Load
+   ARB_CODI,
+   ARB_CONT
+Resident Arbol_Tmp
+Where TAR_CODI=2;
+
+/*Cecos*/
+Mapping
+Cecos_Map:
+Load
+    ARB_CODI,
+    ARB_CONT
+Resident Arbol_Tmp
+Where TAR_CODI=3;
+
+/*Proyectos*/
+Mapping
+Proyecto_Map:
+Load
+    ARB_CODI,
+    ARB_CONT
+Resident Arbol_Tmp
+Where TAR_CODI=4;
+Drop Table Arbol_Tmp;
+
+/*------------------------*/
+/*Parametros Homologacion seccional*/
+Mapping
+SeccionalNom_Map:
+LOAD
+    Value1,
+    Value2
+FROM [lib://DataFiles/Parametrizaciones\Map_Sucursal.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+/*------------------------*/
+/*Homologacion tipo cuentas*/
+Mapping
+TipoCuenta_Map:
+Load * Inline [
+    Field1,Field2
+    'GASTO','Gastos'
+    'PASIVO','Pasivos'
+    'INGRESO','Ingresos'
+    'INVERSIÓN','Inversiones'
+];
+
+Mapping
+Ingresos_Egresos__Map:
+Load * Inline [
+    Field1,Field2
+    'Ingresos',Ingresos
+    'Gastos','Egresos'
+    'Inversiones','Egresos'
+    'Pasivos','Egresos'
+];

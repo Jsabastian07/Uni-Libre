@@ -1,0 +1,21 @@
+/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  Dimencion Seccional
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+Seccional:
+LOAD
+    Codigo                                              as Sk.Sucu,
+    Codigo                                              as Seccional.Codigo,
+    ApplyMap('SeccionalNom_Map',Nombre,'No Definido')   as Seccional.Nombre,
+    'Ok' 													                      as Seccional.Flag
+FROM 
+[lib://DataFiles/Parametrizaciones\Estructura_Dimencional.xlsx]
+(ooxml, embedded labels, table is sucursal)
+Where Codigo <> 0;
+
+Store Seccional into [lib://DataFiles/Transformaciones\_Seccional.qvd];

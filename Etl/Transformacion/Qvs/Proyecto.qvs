@@ -1,0 +1,22 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  Dimencion Proyecto
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+Proyecto:
+LOAD
+    Codigo		                                      as Sk.Proy,
+    Codigo                                          as Proyecto.Codigo,
+    Capitalize(PIDI)					                      as Proyecto.Pidi,
+    Capitalize(COMPONENTE)				                  as Proyecto.Componente,
+    Capitalize(PROGRAMA)				                    as Proyecto.Programa,
+    Capitalize(PROYECTO)				                    as Proyecto.Nombre
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+(ooxml, embedded labels, table is proyecto);
+
+Store Proyecto into [lib://DataFiles/Transformaciones\_Proyecto.qvd];

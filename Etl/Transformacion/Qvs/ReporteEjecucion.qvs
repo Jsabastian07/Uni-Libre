@@ -1,0 +1,895 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  desarrollo de los Informes para Ejecucion Presupuestal
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+  Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+  Fecha     : 15/2/2020
+*****************************************************************************************************/
+/*Carga de Ejecucion Presupuestal*/
+Ejecucion_Tmp1:
+Load
+	SAL_ANOP		AS AÑO, 
+	SAL_MESP		AS MES, 
+	SCE_VADB		AS VALOR_DEBITO, 
+	SCE_VACR		AS VALOR_CREDITO, 
+	SAL_VPRE		AS VALOR_APROBADO, 
+	SAL_MOVI		AS VALOR_ADIC_REDUC, 
+	SAL_TRAS		AS VALOR_TRASLADOS, 
+	SAL_VRES		AS VALOR_RESERVAS,
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU 
+From
+[lib://Recursos/4.Datos/Ejecucion_Presupuestal_*.qvd]
+(qvd);
+
+/* --- Agrupacion CuentasContables --- */
+/*--- Total ---*/
+NoConcatenate
+ReporteTotal_Tmp1:
+LOAD
+    "CUENTA CONTABLE",
+    "NIVEL 4",
+    "NIVEL 3",
+    "NIVEL 2",
+    "NIVEL 1"
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+(ooxml, embedded labels, table is [1. TOTALES]);
+
+/*--- SubTotal ---*/
+NoConcatenate
+ReporteSubTotal_Tmp1:
+LOAD
+    "CUENTA CONTABLE",
+    "NIVEL 5",
+    "NIVEL 4",
+    "NIVEL 3",
+    "NIVEL 2",
+    "NIVEL 1"
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+(ooxml, embedded labels, table is [2. SUBTOTAL]);
+
+/*--- Ingresos Servicios Educativos ---*/
+NoConcatenate
+Ingresos_Serv_Educativos_Tmp:
+LOAD
+    "CUENTA CONTABLE",
+    "NIVEL 4",
+    "NIVEL 3",
+    "NIVEL 2",
+    "NIVEL 1"
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+(ooxml, embedded labels, table is [3. ING. SERVI EDUC]);
+
+/*--- Gastos Personal ---*/
+NoConcatenate
+Gastos_Personal_Tmp:
+LOAD
+    "CUENTA CONTABLE",
+    "NIVEL 3",
+    "NIVEL 2",
+    "NIVEL 1"
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+(ooxml, embedded labels, table is [7. GASTOS PERSONAL]);
+
+// /*Carga de Tablas Dimencionales parametrizables*/
+NoConcatenate
+Dim_Area_Tmp1:
+LOAD
+    Codigo,
+    Nombre
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+(ooxml, embedded labels, table is area);
+
+NoConcatenate
+Dim_Proyecto_Tmp1:
+LOAD
+    Codigo,
+    PIDI,
+    COMPONENTE,
+    PROGRAMA,
+    PROYECTO
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+(ooxml, embedded labels, table is proyecto);
+
+NoConcatenate
+Dim_Cecos_Tmp1:
+LOAD
+    Codigo,
+	"CLASE",
+	"GRUPO",
+	"SUBGRUPO",
+	"TIPO CENTRO DE COSTOS",
+	"CENTRO DE COSTOS"
+FROM 
+[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+(ooxml, embedded labels, table is [centro_costo ]);
+
+/*-----------*/
+NoConcatenate
+Dim_CuentasContables_Tmp1:
+LOAD 
+	CUE_CONT, 
+	CUE_CODI	as COD_CUENTA,
+	CLASE		as CUENTAS_NIVEL1,
+	GRUPO		as CUENTAS_NIVEL2,  
+	CONCEPTO	as CUENTAS_NIVEL3
+FROM
+[lib://Recursos/4.Datos/CuentasContables.qvd]
+(qvd);
+
+/*---------------------------------------*/
+/*Parametros Iniciales de Transformacion para preparacion de datos*/
+NoConcatenate
+Ejecucion_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	ApplyMap('Mapping_TipoCuenta',CUE_CONT,'No Definido')	as TIPO_CUENTA,
+    ApplyMap('Mapping_Cuenta',CUE_CONT,'No Definido')		as CODIGO_CUENTA,
+	Sum(VALOR_APROBADO+VALOR_ADIC_REDUC+VALOR_TRASLADOS) 	as PRESUPUESTO,
+	Sum(VALOR_RESERVAS+(VALOR_DEBITO-VALOR_CREDITO))		as EJECUCUION
+Resident Ejecucion_Tmp1
+Where 1=1
+Group BY AÑO,MES,CUE_CONT,ARB_CECO,ARB_PROY,ARB_AREA,ARB_SUCU;
+Drop Table Ejecucion_Tmp1;
+
+
+/*---------------------*/
+/*Cambio de signos a cuentas 4*/
+NoConcatenate
+Ejecucion_Tmp3:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TIPO_CUENTA,
+   	CODIGO_CUENTA,
+	PRESUPUESTO,
+	(EJECUCUION)*-1 as EJECUCUION
+Resident Ejecucion_Tmp2
+where 1=1 
+and WildMatch(CODIGO_CUENTA,'4*')
+and EJECUCUION < 0;
+
+Concatenate
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TIPO_CUENTA,
+   	CODIGO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp2
+where 1=1 
+and WildMatch(CODIGO_CUENTA,'4*')
+and EJECUCUION >=0;
+
+/*---------------------*/
+/* Cambio a cuentas 4175 y union con las otras  cuentas 4*/
+NoConcatenate
+Ejecucion_Tmp4:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TIPO_CUENTA,
+   	CODIGO_CUENTA,
+	PRESUPUESTO,
+    (EJECUCUION)*-1 as EJECUCUION
+Resident Ejecucion_Tmp3
+where 1=1
+and WildMatch(CODIGO_CUENTA,'4175*');
+
+Concatenate
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TIPO_CUENTA,
+   	CODIGO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp3
+where 1=1
+and Not WildMatch(CODIGO_CUENTA,'4175*');
+Drop Table Ejecucion_Tmp3;
+
+/*---------------------*/
+/* Union de cuentas 4 con resto de cuentas*/
+NoConcatenate
+Ejecucion_Tmp5:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TIPO_CUENTA,
+   	CODIGO_CUENTA,
+	PRESUPUESTO,
+    EJECUCUION
+Resident Ejecucion_Tmp4;
+Drop Table Ejecucion_Tmp4;
+
+Concatenate
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	TIPO_CUENTA,
+   	CODIGO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp2
+where 1=1 
+and Not WildMatch(CODIGO_CUENTA,'4*');
+Drop Table Ejecucion_Tmp2;
+
+
+/*---------------------------*/
+/*Reporte #1: Ejecucion Total*/
+NoConcatenate
+AgrupacionCuentas_Tmp1:
+Load
+    "CUENTA CONTABLE" 	as VALIDA,
+    "NIVEL 1"	as NIVEL1, 
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 4"	as NIVEL4
+Resident ReporteTotal_Tmp1
+Where Len("CUENTA CONTABLE" )=4;
+
+Left Join(AgrupacionCuentas_Tmp1)
+
+LOAD
+    CUE_CONT,
+    Left(COD_CUENTA,4) 	as VALIDA,
+    COD_CUENTA			as CODIGO
+Resident Dim_CuentasContables_Tmp1;
+
+/*---------*/
+NoConcatenate
+AgrupacionCuentas_Tmp2:
+Load
+    "CUENTA CONTABLE" 	as CODIGO,
+    "NIVEL 1"	as NIVEL1, 
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 4"	as NIVEL4
+Resident ReporteTotal_Tmp1
+Where Len("CUENTA CONTABLE")<>4;
+DROP Table ReporteTotal_Tmp1;
+
+Left Join(AgrupacionCuentas_Tmp2)
+
+LOAD
+    CUE_CONT,
+    COD_CUENTA			as CODIGO
+Resident Dim_CuentasContables_Tmp1;
+
+/*Agrupacion doble caso de cuentas*/
+NoConcatenate
+Total_Tmp1:
+Load
+	*
+Resident AgrupacionCuentas_Tmp1;
+Drop Table AgrupacionCuentas_Tmp1;
+
+Concatenate
+
+Load
+	*
+Resident AgrupacionCuentas_Tmp2;
+Drop Table AgrupacionCuentas_Tmp2;
+
+/*---------*/
+NoConcatenate
+Total_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	'Total Ejecucion'	as REPORTE
+Resident Ejecucion_Tmp5
+Where 1=1;
+
+Left Join(Total_Tmp2)
+
+LOAD
+	CUE_CONT,
+	CODIGO,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3,
+    NIVEL4
+Resident Total_Tmp1;
+Drop Table Total_Tmp1;
+
+/*-----------------------*/
+/*Reporte Total Ejecucion*/
+NoConcatenate
+Total_Ejecucion_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	REPORTE,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3,
+    NIVEL4
+Resident Total_Tmp2
+Where 1=1
+and Not IsNull(CODIGO)
+and Not IsNull(TIPO_CUENTA);
+Drop Table Total_Tmp2;
+
+/*-------------------------------*/
+/*Reporte #2: Ejecucion Sub Total*/
+NoConcatenate
+AgrupacionCuentas_Tmp1:
+Load
+    "CUENTA CONTABLE" 	as VALIDA,
+    "NIVEL 1"	as NIVEL1, 
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 4"	as NIVEL4,
+    "NIVEL 5"	as NIVEL5
+Resident ReporteSubTotal_Tmp1
+Where Len("CUENTA CONTABLE" )=4;
+
+Left Join(AgrupacionCuentas_Tmp1)
+
+LOAD
+    CUE_CONT,
+    Left(COD_CUENTA,4) as VALIDA,
+    COD_CUENTA	AS CODIGO
+Resident Dim_CuentasContables_Tmp1;
+
+/*---------*/
+NoConcatenate
+AgrupacionCuentas_Tmp2:
+Load
+    "CUENTA CONTABLE" 	as CODIGO,
+    "NIVEL 1"	as NIVEL1, 
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 4"	as NIVEL4,
+    "NIVEL 5"	as NIVEL5
+Resident ReporteSubTotal_Tmp1
+Where Len("CUENTA CONTABLE")<>4;
+DROP Table ReporteSubTotal_Tmp1;
+
+Left Join(AgrupacionCuentas_Tmp2)
+
+LOAD
+    CUE_CONT,
+    COD_CUENTA	AS CODIGO
+Resident Dim_CuentasContables_Tmp1;
+
+/*---------*/
+NoConcatenate
+SubTotal_Tmp1:
+Load
+	*
+Resident AgrupacionCuentas_Tmp1;
+Drop Table AgrupacionCuentas_Tmp1;
+
+Concatenate
+
+Load
+	*
+Resident AgrupacionCuentas_Tmp2;
+Drop Table AgrupacionCuentas_Tmp2;
+
+/*----------*/
+NoConcatenate
+SubTotal_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	'Sub Total Ejecucion'	as REPORTE
+Resident Ejecucion_Tmp5
+Where 1=1;
+
+Left Join(SubTotal_Tmp2)
+
+LOAD
+	CUE_CONT,
+	CODIGO,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3,
+    NIVEL4,
+    NIVEL5
+Resident SubTotal_Tmp1;
+Drop Table SubTotal_Tmp1;
+
+/*-----------------------*/
+/*Reporte Sub Total Ejecucion*/
+NoConcatenate
+SubTotal_Ejecucion_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	REPORTE,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3,
+    NIVEL4,
+    NIVEL5
+Resident SubTotal_Tmp2
+Where 1=1
+and Not IsNull(CODIGO)
+and Not IsNull(TIPO_CUENTA);
+Drop Table SubTotal_Tmp2;
+
+/*---------------------------------------------------*/
+/*Reporte #3: Ejecucion Ingresos servicios Educaticos*/
+NoConcatenate
+AgrupacionCuentas_Tmp1:
+Load
+    "CUENTA CONTABLE" 	as VALIDA,
+    "NIVEL 1"	as NIVEL1, 
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 4"	as NIVEL4
+Resident Ingresos_Serv_Educativos_Tmp
+Where Len("CUENTA CONTABLE" )=4;
+
+Left Join(AgrupacionCuentas_Tmp1)
+
+LOAD
+    CUE_CONT,
+    Left(COD_CUENTA,4) as VALIDA,
+    COD_CUENTA	AS CODIGO
+Resident Dim_CuentasContables_Tmp1;
+
+/*----------*/
+NoConcatenate
+AgrupacionCuentas_Tmp2:
+Load
+    "CUENTA CONTABLE" 	as CODIGO,
+    "NIVEL 1"	as NIVEL1, 
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 4"	as NIVEL4
+Resident Ingresos_Serv_Educativos_Tmp
+Where Len("CUENTA CONTABLE")<>4;
+DROP Table Ingresos_Serv_Educativos_Tmp;
+
+Left Join(AgrupacionCuentas_Tmp2)
+
+LOAD
+    CUE_CONT,
+    COD_CUENTA	AS CODIGO
+Resident Dim_CuentasContables_Tmp1;
+
+/*---------*/
+NoConcatenate
+Ingresos_Serv_Educativos_Tmp1:
+Load
+	*
+Resident AgrupacionCuentas_Tmp1;
+Drop Table AgrupacionCuentas_Tmp1;
+
+Concatenate
+
+Load
+	*
+Resident AgrupacionCuentas_Tmp2;
+Drop Table AgrupacionCuentas_Tmp2;
+
+/*---------*/
+NoConcatenate
+Ingresos_Serv_Educativos_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	'Ingresos Servicios Educativos'	as REPORTE
+Resident Ejecucion_Tmp5
+Where 1=1;
+
+Left Join(Ingresos_Serv_Educativos_Tmp2)
+
+LOAD
+	CUE_CONT,
+	CODIGO,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3,
+    NIVEL4
+Resident Ingresos_Serv_Educativos_Tmp1;
+Drop Table Ingresos_Serv_Educativos_Tmp1;
+
+/*-------------------------------------*/
+/*Reporte Ingresos Servicios Educativos*/
+NoConcatenate
+Ingresos_ServEducativos_Tmp3:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	REPORTE,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3,
+    NIVEL4
+Resident Ingresos_Serv_Educativos_Tmp2
+Where 1=1
+and Not IsNull(CODIGO)
+and Not IsNull(TIPO_CUENTA);
+Drop Table Ingresos_Serv_Educativos_Tmp2;
+
+/*---------------------------------------*/
+/*Reporte #7: Ejecucion Gastos x Personal*/
+NoConcatenate
+AgrupacionCuentas_Tmp1:
+LOAD
+    "CUENTA CONTABLE"	as CODIGO,
+    "NIVEL 3"	as NIVEL3,
+    "NIVEL 2"	as NIVEL2,
+    "NIVEL 1"	as NIVEL1
+Resident Gastos_Personal_Tmp;
+Drop Table Gastos_Personal_Tmp;
+
+Left Join(AgrupacionCuentas_Tmp1)
+
+LOAD
+    CUE_CONT,
+    COD_CUENTA	AS CODIGO
+Resident Dim_CuentasContables_Tmp1;
+Drop Table Dim_CuentasContables_Tmp1;
+
+/*----------*/
+NoConcatenate
+GastosPersonal_Tmp1:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	'Gastos de Personal'	as REPORTE
+Resident Ejecucion_Tmp5
+Where 1=1;
+
+Left Join(GastosPersonal_Tmp1)
+
+LOAD
+	CUE_CONT,
+	CODIGO,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3
+Resident AgrupacionCuentas_Tmp1;
+Drop Table AgrupacionCuentas_Tmp1;
+
+/*Reporte Gastos por personal*/
+NoConcatenate
+GastosPersonal_Tmp2:
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION,
+	REPORTE,
+    NIVEL1, 
+    NIVEL2,
+    NIVEL3
+Resident GastosPersonal_Tmp1
+Where 1=1
+and Not IsNull(CODIGO)
+and Not IsNull(TIPO_CUENTA);
+Drop Table GastosPersonal_Tmp1;
+
+
+
+/*---------------------------------------*/
+/*Reporte #9: Ejecucion x Areas*/
+NoConcatenate
+Areas_Tmp1:
+Load
+    ApplyMap('Areas_Map',Codigo,'No Definido') as ARB_AREA,
+    Nombre			as NIVEL1,
+    'Reporte Areas'	as REPORTE
+Resident Dim_Area_Tmp1;
+DROP Table Dim_Area_Tmp1;
+
+Left Join(Areas_Tmp1)
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp5;
+
+/*---------------------------------------*/
+/*Reporte #10: Ejecucion x Proyectos*/
+NoConcatenate
+Proyectos_Tmp1:
+LOAD
+    ApplyMap('Proyecto_Map',Codigo,'No Definido') as ARB_PROY,
+    PIDI			as NIVEL1,
+    COMPONENTE		as NIVEL2,
+    PROGRAMA		as NIVEL3,
+    PROYECTO		as NIVEL4,
+    'Reporte Proyectos'	as REPORTE
+Resident Dim_Proyecto_Tmp1;
+Drop Table Dim_Proyecto_Tmp1;
+
+Left Join(Proyectos_Tmp1)
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp5;
+
+/*---------------------------------------*/
+/*Reporte #11: Ejecucion x Centros de costo*/
+NoConcatenate
+Cecos_Tmp1:
+LOAD
+     ApplyMap('Cecos_Map',Codigo,'No Definido') as ARB_CECO,
+	"CLASE"						as NIVEL1,
+	"GRUPO"						as NIVEL2,
+	"SUBGRUPO"					as NIVEL3,
+    "TIPO CENTRO DE COSTOS"		as NIVEL4,
+    "CENTRO DE COSTOS"			as NIVEL5,
+    'Reporte Centros de Costo'	as REPORTE
+Resident Dim_Cecos_Tmp1;
+
+Left Join(Cecos_Tmp1)
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp5;
+
+/*---------------------------------------*/
+/*Reporte #4: Ingresos x Programa*/
+NoConcatenate
+Programa_Tmp1:
+LOAD
+     ApplyMap('Cecos_Map',Codigo,'No Definido') as ARB_CECO,
+	"SUBGRUPO"					as NIVEL1,
+    "TIPO CENTRO DE COSTOS"		as NIVEL2,
+    "CENTRO DE COSTOS"			as NIVEL3,
+    'Ingresos Por Programa'		as REPORTE
+Resident Dim_Cecos_Tmp1
+Where "GRUPO"='FACULTAD';
+Drop Table Dim_Cecos_Tmp1;
+
+Left Join(Cecos_Tmp1)
+
+Load
+	AÑO, 
+	MES, 
+	CUE_CONT,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU, 
+	TIPO_CUENTA,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp5
+Where TIPO_CUENTA ='Ingresos';
+DROP Table Ejecucion_Tmp5;
+
+/*---------*/
+NoConcatenate
+Programa_Tmp2:
+Load
+	*
+Resident Programa_Tmp1
+Where NIVEL1 <> 'No Definido';
+Drop Table Programa_Tmp1;
+
+/*---------------------------------------*/
+/*Union de Conjuntos*/
+NoConcatenate
+Ejecucion_Tmp6:
+Load
+	*
+Resident Total_Ejecucion_Tmp2;
+Drop Table Total_Ejecucion_Tmp2;
+
+Outer Join
+
+Load
+	*
+Resident SubTotal_Ejecucion_Tmp2;
+Drop Table SubTotal_Ejecucion_Tmp2;
+
+Outer Join
+
+Load
+	*
+Resident Ingresos_ServEducativos_Tmp3;
+Drop Table Ingresos_ServEducativos_Tmp3;
+
+Outer Join
+
+Load
+	*
+Resident Areas_Tmp1;
+DROP Table Areas_Tmp1;
+
+Outer Join
+
+Load
+	*
+Resident Proyectos_Tmp1;
+DROP Table Proyectos_Tmp1;
+
+Outer Join
+
+Load
+	*
+Resident Cecos_Tmp1;
+ DROP Table Cecos_Tmp1;
+
+Outer Join
+
+Load
+	*
+Resident Programa_Tmp2;
+DROP Table Programa_Tmp2;
+
+Outer Join
+
+Load
+	*
+Resident GastosPersonal_Tmp2;
+Drop Table GastosPersonal_Tmp2;
+
+/*--------------------------------------- */
+/*Definicion de Campos*/
+NoConcatenate
+ReporteEjecucion:
+Load
+	AÑO&'-'&MES&'-'&CUE_CONT&'-'&ARB_CECO&'-'&ARB_PROY&'-'&ARB_AREA&'-'&ARB_SUCU as Ck.Key,
+    
+    AÑO						as ReporteEjecucion.Año,
+    MES						as ReporteEjecucion.MesNum,
+    CUE_CONT				as ReporteEjecucion.Cue_Cont,
+    ARB_CECO				as ReporteEjecucion.Arb_Ceco,
+    ARB_PROY				as ReporteEjecucion.Arb_Proy,
+    ARB_AREA				as ReporteEjecucion.Arb_Area,
+    ARB_SUCU				as ReporteEjecucion.Arb_Sucu,
+    
+	TIPO_CUENTA				as ReporteEjecucion.TipoCuenta,
+	PRESUPUESTO				as ReporteEjecucion.Presupuesto,
+	EJECUCUION				as ReporteEjecucion.Ejecucion,
+	REPORTE					as ReporteEjecucion.Reporte,
+	Capitalize(NIVEL1) 		as ReporteEjecucion.Nivel1,
+	Capitalize(NIVEL2) 		as ReporteEjecucion.Nivel2,
+	Capitalize(NIVEL3) 		as ReporteEjecucion.Nivel3,
+    Capitalize(NIVEL4) 		as ReporteEjecucion.Nivel4,
+    Capitalize(NIVEL5) 		as ReporteEjecucion.Nivel5
+Resident Ejecucion_Tmp6;
+DROP Table Ejecucion_Tmp6;
+
+Store ReporteEjecucion into [lib://Recursos/4.Datos/Transformaciones/_ReporteEjecucion.qvd];

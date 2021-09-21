@@ -1,0 +1,54 @@
+/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Extraccion para los datos de la ejecucion Presupuestal
+----------------------------------------------------------------------------------------------------
+  Autor     : Jhoan Sebastian Giraldo Mosquera
+  Email     : Jhoan-94g@Hotmail.com
+  Fecha     : 09/05/2020
+
+*****************************************************************************************************/
+Matriculas:
+sql
+SELECT
+    d.cod_unidad,
+    sd.cod_seccional,
+    h.cod_periodo,
+    SUBSTR(a.nom_unidad,1,100) nom_unidad,
+    j.cod_cen_costo,
+    h.num_niv_cursa nivel,
+    a.id_sede,
+    a.id_dependencia,
+    i.nom_dependencia,
+    (SELECT nom_tabla FROM SRC_GENERICA aa WHERE aa.tip_tabla = 'TIPMOD' and aa.cod_tabla = a.cod_modalidad) nom_modalidad, 
+    a.cod_modalidad,
+    COUNT(1) total
+FROM
+    SRC_UNI_ACADEMICA a,
+    SRC_ALUM_PROGRAMA d,
+    BAS_TERCERO e,
+    SRC_ENC_LIQUIDACION f,
+    SRC_ALUM_PERIODO h,
+    BAS_DEPENDENCIA i,
+    BAS_CEN_COSTO j,
+    SRC_SEDE c,
+    (select id_sede, cod_auxiliar1   as cod_seccional from SRC_SEDE LEFT JOIN src_generica ON cod_sede = cod_tabla where tip_tabla='SEVSUC') sd
+WHERE
+        h.cod_periodo       in ('20211')
+    AND h.est_mat_fin      = 1
+    AND h.est_mat_aca      = 1
+    AND d.id_alum_programa = h.id_alum_programa
+    AND a.cod_unidad       = d.cod_unidad
+    AND e.id_tercero       = d.id_tercero
+    AND f.id_alum_programa = d.id_alum_programa
+    AND f.cod_periodo      = h.cod_periodo
+    AND f.tip_liquidacion  = 1
+    AND i.id_dependencia   = a.id_dependencia                   
+    AND c.id_sede          = a.id_sede
+    AND a.id_sede          = sd.id_sede
+    AND j.id_cen_costo      = a.id_cen_costo    
+    AND EXISTS (SELECT 1 FROM SRC_ENC_MATRICULA g WHERE g.cod_periodo    in ('20211') AND g.id_alum_programa = d.id_alum_programa)
+GROUP BY a.id_sede,a.cod_modalidad,a.id_dependencia,i.nom_dependencia,  j.cod_cen_costo, d.cod_unidad,h.cod_periodo,a.nom_unidad,h.num_niv_cursa, sd.cod_seccional;
+
+
+STORE Matriculas INTO [..\4.Datos\Matriculas_2021.qvd];
+DROP TABLE Matriculas;

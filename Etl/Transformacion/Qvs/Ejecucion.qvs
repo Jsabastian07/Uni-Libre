@@ -1,0 +1,108 @@
+﻿/****************************************************************************************************
+Copyright © Arquitectura Desarrollo TACTICA
+Descripción : Transformacion para  la Ejecucion Presupuestal
+----------------------------------------------------------------------------------------------------
+ Autor     : Jhoan Sebastian Giraldo   || William Alejandro Giraldo
+ Email     : Jhoan-94g@Hotmail.com     || IngWilliamGirado@Hotmail.com
+----------------------------------------------------------------------------------------------------
+ Fecha     : 15\2\2020
+*****************************************************************************************************/
+Ejecucion_Tmp1:
+Load
+	SAL_ANOP		AS AÑO, 
+	SAL_MESP		AS MES, 
+	SCE_VADB		AS VALOR_DEBITO, 
+	SCE_VACR		AS VALOR_CREDITO, 
+	SAL_VPRE		AS VALOR_APROBADO, 
+	SAL_MOVI		AS VALOR_ADIC_REDUC, 
+	SAL_TRAS		AS VALOR_TRASLADOS, 
+	SAL_VRES		AS VALOR_RESERVAS,
+    CUE_CODI,
+	CODI_CECOS		AS ARB_CECO, 
+	CODI_PROY		AS ARB_PROY, 
+	CODI_AREA		AS ARB_AREA, 
+	CODI_SUCUR		AS ARB_SUCU 
+From
+[lib://DataFiles/Ejecucion_Presupuestal_*.qvd]
+(qvd)
+Where CODI_SUCUR <> 0;
+
+/*Parametro de Cuentas Contables*/
+NoConcatenate
+PlanCuentas_Tmp:
+LOAD
+   Codigo,
+   Clase
+FROM 
+[lib://DataFiles/Parametrizaciones\PlanCuentas.xlsx]
+(ooxml, embedded labels, table is cuentas);
+
+/*--------------------------------------------------------*/
+/* Transformacion */
+NoConcatenate
+Ejecucion_Tmp2:
+Load
+   Codigo									as CUE_CODI,
+   ApplyMap('TipoCuenta_Map',Clase,Null())	as TipoCuenta
+Resident PlanCuentas_Tmp;
+Drop Table PlanCuentas_Tmp;
+
+Right Join(Ejecucion_Tmp2)
+
+Load
+    AÑO, 
+	MES,
+    CUE_CODI,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	Sum(VALOR_APROBADO+VALOR_ADIC_REDUC+VALOR_TRASLADOS) 	as PRESUPUESTO,
+	Sum(VALOR_RESERVAS+(VALOR_DEBITO-VALOR_CREDITO))		as EJECUCUION
+Resident Ejecucion_Tmp1
+Where 1=1
+Group BY AÑO,MES,CUE_CODI,ARB_CECO,ARB_PROY,ARB_AREA,ARB_SUCU;
+Drop Table Ejecucion_Tmp1;
+
+NoConcatenate
+Ejecucion_Tmp3:
+Load
+    CUE_CODI,
+   	TipoCuenta,
+   	If(TipoCuenta <> Null(), 'Clasificada', 'Sin Clasificación')	as EstadoCuenta,
+	ApplyMap('Ingresos_Egresos__Map',TipoCuenta,Null())  as AgrupaCuenta,
+	AÑO, 
+	MES,
+	ARB_CECO, 
+	ARB_PROY, 
+	ARB_AREA, 
+	ARB_SUCU,
+	PRESUPUESTO,
+	EJECUCUION
+Resident Ejecucion_Tmp2;
+Drop Table Ejecucion_Tmp2;
+
+
+/*-----------------------*/
+NoConcatenate
+Ejecucion_Presupuestal:
+Load
+	AÑO&'-'&MES&'-'&CUE_CODI&'-'&ARB_CECO&'-'&ARB_PROY&'-'&ARB_AREA&'-'&ARB_SUCU as Ck.Key,
+// 	CUE_CONT				as Ejecucion.Cue_Cont,
+    CUE_CODI				as Ejecucion.Cue_Codi,
+   	AÑO						as Ejecucion.Año,
+   	MES						as Ejecucion.MesNum,
+   	ARB_CECO				as Ejecucion.Arb_Ceco,
+   	ARB_PROY				as Ejecucion.Arb_Proy,
+   	ARB_AREA				as Ejecucion.Arb_Area,
+   	ARB_SUCU				as Ejecucion.Arb_Sucu,
+   	CUE_CODI				as Ejecucion.CodigoCuenta,
+	TipoCuenta				as Ejecucion.TipoCuenta,
+	EstadoCuenta			as Ejecucion.EstadoCuenta,
+	AgrupaCuenta			as Ejecucion.AgrupaCuenta,
+	PRESUPUESTO				as Ejecucion.Presupuesto,
+	EJECUCUION				as Ejecucion.Ejecucion
+Resident Ejecucion_Tmp3;
+Drop Table Ejecucion_Tmp3;
+
+Store Ejecucion_Presupuestal into [lib://DataFiles/Transformaciones/_Ejecucion_Presupuestal.qvd];

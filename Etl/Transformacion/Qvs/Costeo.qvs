@@ -1,0 +1,171 @@
+﻿NoConcatenate
+Ceco_Tmp1:
+LOAD 
+	Sk.Ceco, 
+    CentroCosto.Codigo		as Codigo, 
+    CentroCosto.Clase		as Clase, 
+    CentroCosto.Grupo		as Grupo, 
+    CentroCosto.SubGrupo	as SubGrupo, 
+    CentroCosto.Tipo		as Tipo, 
+    CentroCosto.Nombre		as Nombre
+FROM
+[lib://DataFiles/Transformaciones\_CentroCosto.qvd]
+(qvd);
+
+/*-------------*/
+/*Matriculas Proyeccion*/
+/*-------------*/
+Matriculas_Proyectadas_Tmp1:
+LOAD
+    AÑO										as Año,
+    CICLO									as Ciclo,
+    SUCURSAL								as Seccional,
+    "CODIGO CENTRO COSTO"					as Codigo,
+    "NUMERO DE MATRICULAS PROYECTADAS"		as Total_Proyectado
+FROM 
+[lib://DataFiles/Parametrizaciones\HISTORICO DE MATRICULAS PROYECTADAS PARA CAPTURA DE DATOS EN BI *.xlsx]
+(ooxml, embedded labels, table is PROYECTADO);
+
+NoConcatenate
+Ejecucion_Tmp1:
+LOAD 
+	Ck.Key, 
+	Ejecucion.Año																as Año,
+	Ejecucion.Arb_Ceco,
+	Ejecucion.Arb_Ceco															as Ceco,
+	Ejecucion.TipoCuenta														as TipoCuenta, 
+	Ejecucion.Ejecucion															as Ejecucion
+FROM
+[lib://DataFiles/Transformaciones\_Ejecucion_Presupuestal.qvd]
+(qvd);
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+Administrativa_Tmp1:
+LOAD
+	Codigo
+Resident Ceco_Tmp1
+Where Not WildMatch(Grupo, 'Facultad');
+
+NoConcatenate
+Ejecucion_Administrativa_Tmp1:
+LOAD
+	Año,
+	Ceco,  
+	TipoCuenta, 
+	Ejecucion
+Resident Ejecucion_Tmp1
+Where WildMatch(TipoCuenta, 'Gastos', 'Ingresos', 'Inversiones')
+And Exists(Codigo, Ceco);
+Drop Table Administrativa_Tmp1;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+Facultad_Tmp1:
+LOAD
+	Codigo
+Resident Ceco_Tmp1
+Where WildMatch(Grupo, 'Facultad');
+
+NoConcatenate
+Ejecucion_Facultad_Tmp1:
+LOAD
+	Año,
+	Ceco,  
+	TipoCuenta, 
+	Ejecucion
+Resident Ejecucion_Tmp1
+Where WildMatch(TipoCuenta, 'Gastos', 'Ingresos', 'Inversiones')
+And Exists(Codigo, Ceco);
+Drop Table Facultad_Tmp1;
+Drop Table Ejecucion_Tmp1;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+Ejecucion_Facultad_Tmp2:
+LOAD
+	Año&'-'&TipoCuenta	as Ck.llave,
+	Año,
+	Ceco,  
+	TipoCuenta, 
+	Ejecucion
+Resident Ejecucion_Facultad_Tmp1;
+Drop Table Ejecucion_Facultad_Tmp1;
+
+Left Join (Ejecucion_Facultad_Tmp2)
+
+LOAD
+	Año&'-'&TipoCuenta	as Ck.llave,
+	Sum(Ejecucion)		as Total_Administrativo
+Resident Ejecucion_Administrativa_Tmp1
+Group By Año, TipoCuenta;
+Drop Table Ejecucion_Administrativa_Tmp1;
+
+NoConcatenate
+Costeo_Tmp1:
+LOAD
+	Sk.Ceco, 
+	Codigo,  
+	Grupo, 
+	SubGrupo, 
+	Tipo, 
+	Nombre
+Resident Ceco_Tmp1
+Where WildMatch(Clase, 'Unidades Gestoras');
+Drop Table Ceco_Tmp1;
+
+Left Join(Costeo_Tmp1)
+
+Load
+	Codigo,
+	Año,
+	Sum(Total_Proyectado)	as Total_Proyectado
+Resident Matriculas_Proyectadas_Tmp1
+Group by Codigo, Año;
+Drop Table Matriculas_Proyectadas_Tmp1;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+NoConcatenate
+Costeo_Tmp2:
+LOAD
+	Ceco&'-'&Año		as Ck.llave,
+	Año,
+	Ceco,  
+	TipoCuenta, 
+	Sum(Ejecucion)		as Ejecucion,
+ 	Total_Administrativo
+Resident Ejecucion_Facultad_Tmp2
+Group By Ceco, Año, TipoCuenta, Total_Administrativo;
+Drop Table Ejecucion_Facultad_Tmp2;
+
+Left Join(Costeo_Tmp2)
+
+LOAD
+	Codigo&'-'&Año		as Ck.llave,
+	Grupo, 
+	SubGrupo, 
+	Tipo, 
+	Nombre,
+	Total_Proyectado
+Resident Costeo_Tmp1;
+Drop Table Costeo_Tmp1;
+
+/*----------*/
+NoConcatenate
+Costeo:
+LOAD Distinct
+	Año&'-'&Ceco			as Ck.Key3,
+	Año						as Costeo.Año,
+	Ceco					as Costeo.Codigo,  
+	Ejecucion				as Costeo.Ejecucion,
+	Grupo					as Costeo.Grupo, 
+	SubGrupo				as Costeo.SubGrupo, 
+	Tipo					as Costeo.Tipo,
+	TipoCuenta				as Costeo.TipoCuenta, 
+	Nombre					as Costeo.CentroCosto,
+	Total_Administrativo	as Costeo.TotalAdministrativo,
+	Total_Proyectado		as Costeo.TotalProyectado
+Resident Costeo_Tmp2;
+Drop Table Costeo_Tmp2;
+
+Store Costeo into [lib://DataFiles/Transformaciones/_Costeo.qvd];
