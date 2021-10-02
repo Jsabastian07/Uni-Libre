@@ -24,7 +24,7 @@ Load
 	ARB_AREA, 
 	ARB_SUCU 
 From
-[lib://Recursos/4.Datos/Ejecucion_Presupuestal_*.qvd]
+[lib://Recursos/Datos/Ejecucion_Presupuestal_*.qvd]
 (qvd);
 
 /* --- Agrupacion CuentasContables --- */
@@ -38,7 +38,7 @@ LOAD
     "NIVEL 2",
     "NIVEL 1"
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/CuentasContables.xlsx]
 (ooxml, embedded labels, table is [1. TOTALES]);
 
 /*--- SubTotal ---*/
@@ -52,7 +52,7 @@ LOAD
     "NIVEL 2",
     "NIVEL 1"
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/CuentasContables.xlsx]
 (ooxml, embedded labels, table is [2. SUBTOTAL]);
 
 /*--- Ingresos Servicios Educativos ---*/
@@ -65,7 +65,7 @@ LOAD
     "NIVEL 2",
     "NIVEL 1"
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/CuentasContables.xlsx]
 (ooxml, embedded labels, table is [3. ING. SERVI EDUC]);
 
 /*--- Gastos Personal ---*/
@@ -77,7 +77,7 @@ LOAD
     "NIVEL 2",
     "NIVEL 1"
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/CuentasContables.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/CuentasContables.xlsx]
 (ooxml, embedded labels, table is [7. GASTOS PERSONAL]);
 
 // /*Carga de Tablas Dimencionales parametrizables*/
@@ -87,7 +87,7 @@ LOAD
     Codigo,
     Nombre
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is area);
 
 NoConcatenate
@@ -99,7 +99,7 @@ LOAD
     PROGRAMA,
     PROYECTO
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is proyecto);
 
 NoConcatenate
@@ -112,7 +112,7 @@ LOAD
 	"TIPO CENTRO DE COSTOS",
 	"CENTRO DE COSTOS"
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is [centro_costo ]);
 
 /*-----------*/
@@ -125,7 +125,7 @@ LOAD
 	GRUPO		as CUENTAS_NIVEL2,  
 	CONCEPTO	as CUENTAS_NIVEL3
 FROM
-[lib://Recursos/4.Datos/CuentasContables.qvd]
+[lib://Recursos/Datos/CuentasContables.qvd]
 (qvd);
 
 /*---------------------------------------*/
@@ -892,4 +892,4 @@ Load
 Resident Ejecucion_Tmp6;
 DROP Table Ejecucion_Tmp6;
 
-Store ReporteEjecucion into [lib://Recursos/4.Datos/Transformaciones/_ReporteEjecucion.qvd];
+Store ReporteEjecucion into [lib://Recursos/Datos/Transformaciones/_ReporteEjecucion.qvd];

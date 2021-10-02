@@ -16,7 +16,7 @@ LOAD
     Capitalize(PROGRAMA)				                    as Proyecto.Programa,
     Capitalize(PROYECTO)				                    as Proyecto.Nombre
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is proyecto);
 
-Store Proyecto into [lib://DataFiles/Transformaciones\_Proyecto.qvd];
+Store Proyecto into [lib://Recursos/Datos/Transformaciones\_Proyecto.qvd];

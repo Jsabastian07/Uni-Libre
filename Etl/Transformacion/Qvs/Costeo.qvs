@@ -9,7 +9,7 @@ LOAD
     CentroCosto.Tipo		as Tipo, 
     CentroCosto.Nombre		as Nombre
 FROM
-[lib://DataFiles/Transformaciones\_CentroCosto.qvd]
+[lib://Recursos/Datos/Transformaciones\_CentroCosto.qvd]
 (qvd);
 
 /*-------------*/
@@ -23,7 +23,7 @@ LOAD
     "CODIGO CENTRO COSTO"					as Codigo,
     "NUMERO DE MATRICULAS PROYECTADAS"		as Total_Proyectado
 FROM 
-[lib://DataFiles/Parametrizaciones\HISTORICO DE MATRICULAS PROYECTADAS PARA CAPTURA DE DATOS EN BI *.xlsx]
+[lib://Recursos/Datos/Parametrizaciones\HISTORICO DE MATRICULAS PROYECTADAS PARA CAPTURA DE DATOS EN BI *.xlsx]
 (ooxml, embedded labels, table is PROYECTADO);
 
 NoConcatenate
@@ -36,7 +36,7 @@ LOAD
 	Ejecucion.TipoCuenta														as TipoCuenta, 
 	Ejecucion.Ejecucion															as Ejecucion
 FROM
-[lib://DataFiles/Transformaciones\_Ejecucion_Presupuestal.qvd]
+[lib://Recursos/Datos/Transformaciones\_Ejecucion_Presupuestal.qvd]
 (qvd);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,4 +168,4 @@ LOAD Distinct
 Resident Costeo_Tmp2;
 Drop Table Costeo_Tmp2;
 
-Store Costeo into [lib://DataFiles/Transformaciones/_Costeo.qvd];
+Store Costeo into [lib://Recursos/Datos/Transformaciones/_Costeo.qvd];

@@ -23,7 +23,7 @@ Load
 	CODI_AREA		AS ARB_AREA, 
 	CODI_SUCUR		AS ARB_SUCU 
 From
-[lib://DataFiles/Ejecucion_Presupuestal_*.qvd]
+[lib://Recursos/Datos/Ejecucion_Presupuestal_*.qvd]
 (qvd)
 Where CODI_SUCUR <> 0;
 
@@ -34,7 +34,7 @@ LOAD
    Codigo,
    Clase
 FROM 
-[lib://DataFiles/Parametrizaciones\PlanCuentas.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/PlanCuentas.xlsx]
 (ooxml, embedded labels, table is cuentas);
 
 /*--------------------------------------------------------*/
@@ -105,4 +105,4 @@ Load
 Resident Ejecucion_Tmp3;
 Drop Table Ejecucion_Tmp3;
 
-Store Ejecucion_Presupuestal into [lib://DataFiles/Transformaciones/_Ejecucion_Presupuestal.qvd];
+Store Ejecucion_Presupuestal into [lib://Recursos/Datos/Transformaciones/_Ejecucion_Presupuestal.qvd];

@@ -17,7 +17,7 @@ LOAD
     COD_CEN_COSTO							as Cecos,
     "TOTAL"									as Total_Ejecutado
 FROM 
-[lib://Recursos/4.Datos/Matriculas_*.qvd]
+[lib://Recursos/Datos/Matriculas_*.qvd]
 (qvd);
 
 /*-------------*/
@@ -31,7 +31,7 @@ LOAD
     "CODIGO CENTRO COSTO"					as Cecos,
     "NUMERO DE MATRICULAS PROYECTADAS"		as Total_Proyectado
 FROM 
-[lib://Recursos/4.Datos/Parametrizaciones\HISTORICO DE MATRICULAS PROYECTADAS PARA CAPTURA DE DATOS EN BI *.xlsx]
+[lib://Recursos/Datos/Parametrizaciones/HISTORICO DE MATRICULAS PROYECTADAS PARA CAPTURA DE DATOS EN BI *.xlsx]
 (ooxml, embedded labels, table is PROYECTADO);
 
 /*----------*/
@@ -81,4 +81,4 @@ Resident Matriculas_Tmp
 Where Seccional <> null();
 Drop Table Matriculas_Tmp;
 
-Store Matriculas into [lib://DataFiles/Transformaciones\_Matriculas.qvd];
+Store Matriculas into [lib://Recursos/Datos/Transformaciones/_Matriculas.qvd];

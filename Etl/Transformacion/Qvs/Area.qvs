@@ -13,7 +13,7 @@ LOAD
     Codigo                                  as Area.Codigo,
     Capitalize(Nombre)						as Area.Nombre
 FROM 
-[lib://DataFiles/Parametrizaciones\Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones\Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is area);
 
-Store Area into [lib://DataFiles/Transformaciones\_Area.qvd];
+Store Area into [lib://Recursos/Datos/Transformaciones/_Area.qvd];

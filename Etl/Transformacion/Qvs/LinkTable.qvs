@@ -19,7 +19,7 @@ Load Distinct
     Ejecucion.Arb_Area				as LinkTable.Arb_Area, 
     Ejecucion.Arb_Sucu				as LinkTable.Arb_Sucu
 FROM 
-[lib://DataFiles/Transformaciones\_Ejecucion_Presupuestal.qvd]
+[lib://Recursos/Datos/Transformaciones\_Ejecucion_Presupuestal.qvd]
 (qvd);
 
 NoConcatenate
@@ -29,7 +29,7 @@ Load Distinct
     Matriculas.Arb_Ceco				as LinkTable.Arb_Ceco,
     Matriculas.Arb_Sucu			  	as LinkTable.Arb_Sucu
 FROM 
-[lib://DataFiles/Transformaciones\_Matriculas.qvd]
+[lib://Recursos/Datos/Transformaciones\_Matriculas.qvd]
 (qvd);
 
 NoConcatenate
@@ -38,7 +38,7 @@ Load Distinct
     Costeo.Año					    as LinkTable.Año,
     Costeo.Codigo				    as LinkTable.Arb_Ceco
 FROM 
-[lib://DataFiles/Transformaciones\_Costeo.qvd]
+[lib://Recursos/Datos/Transformaciones\_Costeo.qvd]
 (qvd);
 
 /*----------*/
@@ -92,5 +92,5 @@ Load
 Resident LinkTable_Tmp;
 Drop Table LinkTable_Tmp;
 
-Store LinkTable into [lib://DataFiles/Transformaciones\_LinkTable.qvd];
+Store LinkTable into [lib://Recursos/Datos/Transformaciones\_LinkTable.qvd];
 //Drop Table LinkTable;

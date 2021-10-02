@@ -7,8 +7,6 @@ Descripción : Transformacion para Dimencion Cuentas Con tables
 ----------------------------------------------------------------------------------------------------
   Fecha     : 15/2/2020
 *****************************************************************************************************/
-////////////////////////////////////////////////////////////////////////////////////CUENTA CONTABLE////////////////////////////////////////////////////////////////////////////////////////
-//Left Keep(LinkTable)
 CuentaContable:
 LOAD
     "Codigo"			      as Sk.CodigoCuenta,
@@ -21,7 +19,17 @@ LOAD
     'Ok'								as CuentaContable.Flag,
     "Modalidad"	        as CuentaContable.ModContratacion
 FROM 
-[lib://DataFiles/Parametrizaciones\PlanCuentas.xlsx]
+[lib://Recursos/Datos/Parametrizaciones\PlanCuentas.xlsx]
 (ooxml, embedded labels, table is cuentas);
- 
-Store CuentaContable into [lib://DataFiles/Transformaciones\_CuentaContable.qvd];
+
+Left Join
+
+LOAD
+    CODIGO_COLGAAP 			as Sk.CodigoCuenta,
+    NOMBRE_COLGAAP			as CuentaHomologada,
+    "CUENTA Homologada"		as CodigoHomologado,
+    'Cuentas homologadas'   as FlagHomologadas
+FROM [lib://Recursos/Datos/Parametrizaciones/PLAN CUENTAS COLGAP - NIIF Version 10Agosto2021.xlsx]
+(ooxml, embedded labels, table is homologacion);
+
+Store CuentaContable into [lib://Recursos/Datos/Transformaciones/_CuentaContable.qvd];

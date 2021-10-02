@@ -8,7 +8,7 @@ LOAD
     GRUPO,  
     CONCEPTO	
 FROM
-[lib://DataFiles/CuentasContables.qvd]
+[lib://Recursos/Datos/CuentasContables.qvd]
 (qvd);
 
 //////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ LOAD
     ARB_CODI, 
     TAR_CODI
 FROM
-[lib://DataFiles/Arbol.qvd]
+[lib://Recursos/Datos/Arbol.qvd]
 (qvd)
 Where
 WildMatch(TAR_CODI, 2,3,4);
@@ -90,7 +90,7 @@ LOAD Distinct
     Ejecucion.Arb_Sucu		as Sucu,
     Ejecucion.Cue_Codi		as CuentaContable
 FROM
-[lib://DataFiles/Transformaciones\_Ejecucion_Presupuestal.qvd]
+[lib://Recursos/Datos/Transformaciones\_Ejecucion_Presupuestal.qvd]
 (qvd);
 
 ///////////////////
@@ -101,7 +101,7 @@ LOAD
     Proyecto.Programa		as Proy_Programa, 
     Proyecto.Nombre		as Proy_Nombre
 FROM
-[lib://DataFiles/Transformaciones\_Proyecto.qvd]
+[lib://Recursos/Datos/Transformaciones\_Proyecto.qvd]
 (qvd);
 
 ///////////////////
@@ -115,7 +115,7 @@ LOAD
     CentroCosto.Tipo		as Ceco_Tipo, 
     CentroCosto.Nombre	as Ceco_Nombre
 FROM
-[lib://DataFiles/Transformaciones\_CentroCosto.qvd]
+[lib://Recursos/Datos/Transformaciones\_CentroCosto.qvd]
 (qvd);
 
 ///////////////////
@@ -126,7 +126,7 @@ LOAD
     Seccional.Nombre		as Sucu_Nombre
 
 FROM
-[lib://DataFiles/Transformaciones\_Seccional.qvd]
+[lib://Recursos/Datos/Transformaciones\_Seccional.qvd]
 (qvd);
 
 ///////////////////
@@ -136,7 +136,7 @@ LOAD
     CuentaContable.Codigo		as CuentaContable, 
     CuentaContable.Concepto	as CuentaContable_Nombre 
 FROM
-[lib://DataFiles/Transformaciones\_CuentaContable.qvd]
+[lib://Recursos/Datos/Transformaciones\_CuentaContable.qvd]
 (qvd);
 
 ////////////////////////////////////////////Comienzo Transformacion/////////////////////////////////////////////////////
@@ -359,4 +359,4 @@ LOAD Distinct
 Resident Ejecucion_Tmp5;
 Drop Table Ejecucion_Tmp5;
 
-Store Semaforo into [lib://DataFiles/Transformaciones\_Semaforo.qvd];
+Store Semaforo into [lib://Recursos/Datos/Transformaciones\_Semaforo.qvd];

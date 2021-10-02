@@ -52,7 +52,7 @@ LOAD
 	GRUPO		as CUENTAS_NIVEL2,  
 	CONCEPTO	as CUENTAS_NIVEL3
 FROM
-[lib://DataFiles/CuentasContables.qvd]
+[lib://Recursos/Datos/CuentasContables.qvd]
 (qvd);
 
 Mapping
@@ -79,7 +79,7 @@ LOAD
     ARB_CODI,
     TAR_CODI
 FROM 
-[lib://DataFiles/Arbol.qvd]
+[lib://Recursos/Datos/Arbol.qvd]
 (qvd);
 
 /*Areas*/
@@ -126,7 +126,8 @@ SeccionalNom_Map:
 LOAD
     Value1,
     Value2
-FROM [lib://DataFiles/Parametrizaciones\Map_Sucursal.xlsx]
+FROM 
+[lib://Recursos/Datos/Parametrizaciones/Map_Sucursal.xlsx]
 (ooxml, embedded labels, table is Sheet1);
 
 /*------------------------*/

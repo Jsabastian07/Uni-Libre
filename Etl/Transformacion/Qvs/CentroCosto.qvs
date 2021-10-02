@@ -18,7 +18,7 @@ LOAD
     Capitalize("CENTRO DE COSTOS")					        as CentroCosto.Nombre,
     'Ok' 												                    as CentroCosto.Flag
 FROM 
-[lib://DataFiles/Parametrizaciones\Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones\Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is [centro_costo ]);
 
-Store CentroCosto into [lib://DataFiles/Transformaciones\_CentroCosto.qvd];
+Store CentroCosto into [lib://Recursos/Datos/Transformaciones/_CentroCosto.qvd];

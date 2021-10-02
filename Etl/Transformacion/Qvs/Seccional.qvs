@@ -14,8 +14,8 @@ LOAD
     ApplyMap('SeccionalNom_Map',Nombre,'No Definido')   as Seccional.Nombre,
     'Ok' 													                      as Seccional.Flag
 FROM 
-[lib://DataFiles/Parametrizaciones\Estructura_Dimencional.xlsx]
+[lib://Recursos/Datos/Parametrizaciones\Estructura_Dimencional.xlsx]
 (ooxml, embedded labels, table is sucursal)
 Where Codigo <> 0;
 
-Store Seccional into [lib://DataFiles/Transformaciones\_Seccional.qvd];
+Store Seccional into [lib://Recursos/Datos/Transformaciones/_Seccional.qvd];

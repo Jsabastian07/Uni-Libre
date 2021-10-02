@@ -15,7 +15,7 @@ Load Distinct
     ApplyMap('MapMes',LinkTable.MesNum)			                as Calendario.Mes,
     ApplyMap('MapTrimestre',LinkTable.MesNum)	                as Calendario.Trimestre
 FROM 
-[lib://DataFiles/Transformaciones\_LinkTable.qvd]
+[lib://Recursos/Datos/Transformaciones\_LinkTable.qvd]
 (qvd);
 
-Store Calendario into [lib://DataFiles/Transformaciones\_Calendario.qvd];
+Store Calendario into [lib://Recursos/Datos/Transformaciones\_Calendario.qvd];
